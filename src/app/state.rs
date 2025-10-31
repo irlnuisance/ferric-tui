@@ -27,6 +27,7 @@ pub struct Model {
     pub iso_results: Vec<IsoMeta>,
     pub iso_selected: usize,
     pub iso_searching: bool,
+    pub iso_debounce_until: Option<std::time::Instant>,
     pub iso_chosen: Option<IsoPath>,
 
     pub devices: Vec<Device>,
@@ -84,6 +85,7 @@ impl Default for Model {
             iso_results: Vec::new(),
             iso_selected: 0,
             iso_searching: false,
+            iso_debounce_until: None,
             iso_chosen: None,
             devices: Vec::new(),
             device_selected: 0,

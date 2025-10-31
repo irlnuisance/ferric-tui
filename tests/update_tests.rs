@@ -84,12 +84,19 @@ fn test_iso_query_change() {
     ];
     model.iso_selected = 1;
 
-    let (new_model, cmds) = update(model, Msg::IsoQueryChanged("ubuntu".to_string()));
+    let (mut new_model, cmds) = update(model, Msg::IsoQueryChanged("ubuntu".to_string()));
 
     assert_eq!(new_model.iso_query, "ubuntu");
     assert_eq!(new_model.iso_selected, 0);
-    assert!(new_model.iso_searching);
+    assert!(!new_model.iso_searching);
 
+    assert_eq!(cmds.len(), 0);
+
+    new_model.iso_debounce_until =
+        Some(std::time::Instant::now() - std::time::Duration::from_millis(1));
+    let (new_model, cmds) = update(new_model, Msg::Tick);
+
+    assert!(new_model.iso_searching);
     assert_eq!(cmds.len(), 1);
     match &cmds[0] {
         Cmd::ScanIso { query } => assert_eq!(query, "ubuntu"),
@@ -196,6 +203,14 @@ fn test_predictability() {
     assert_eq!(result1.iso_selected, result2.iso_selected);
     assert_eq!(result1.iso_searching, result2.iso_searching);
     assert_eq!(cmds1.len(), cmds2.len());
+
+    let mut m1 = result1.clone();
+    let mut m2 = result2.clone();
+    m1.iso_debounce_until = Some(std::time::Instant::now() - std::time::Duration::from_millis(1));
+    m2.iso_debounce_until = Some(std::time::Instant::now() - std::time::Duration::from_millis(1));
+    let (_r1, c1) = update(m1, Msg::Tick);
+    let (_r2, c2) = update(m2, Msg::Tick);
+    assert_eq!(c1.len(), c2.len());
 }
 
 #[test]

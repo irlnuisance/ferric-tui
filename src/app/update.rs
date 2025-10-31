@@ -8,13 +8,15 @@ use super::{
 pub fn update(mut model: Model, msg: Msg) -> (Model, Vec<Cmd>) {
     match msg {
         Msg::Tick => {
-            if matches!(model.screen, Screen::IsoSearch)
-                && !model.iso_searching
-                && model.iso_results.is_empty()
-            {
-                model.iso_searching = true;
-                let query = model.iso_query.clone();
-                return (model, vec![Cmd::ScanIso { query }]);
+            if matches!(model.screen, Screen::IsoSearch) && !model.iso_searching {
+                let now = std::time::Instant::now();
+                let debounce_due = model.iso_debounce_until.map(|t| now >= t).unwrap_or(false);
+                if model.iso_results.is_empty() || debounce_due {
+                    model.iso_searching = true;
+                    model.iso_debounce_until = None;
+                    let query = model.iso_query.clone();
+                    return (model, vec![Cmd::ScanIso { query }]);
+                }
             }
             if matches!(model.screen, Screen::DeviceSelect)
                 && !model.device_refreshing
@@ -62,9 +64,8 @@ pub fn update(mut model: Model, msg: Msg) -> (Model, Vec<Cmd>) {
         Msg::IsoQueryChanged(q) => {
             model.iso_query = q;
             model.iso_selected = 0;
-            model.iso_searching = true;
-            let query = model.iso_query.clone();
-            return (model, vec![Cmd::ScanIso { query }]);
+            model.iso_debounce_until =
+                Some(std::time::Instant::now() + std::time::Duration::from_millis(200));
         }
         Msg::IsoSearchRequested => {
             model.iso_searching = true;
@@ -234,18 +235,14 @@ fn handle_key(model: &mut Model, key: KeyEvent) -> Option<Cmd> {
             KeyCode::Backspace => {
                 model.iso_query.pop();
                 model.iso_selected = 0;
-                model.iso_searching = true;
-                return Some(Cmd::ScanIso {
-                    query: model.iso_query.clone(),
-                });
+                model.iso_debounce_until =
+                    Some(std::time::Instant::now() + std::time::Duration::from_millis(200));
             }
             KeyCode::Char(c) => {
                 model.iso_query.push(c);
                 model.iso_selected = 0;
-                model.iso_searching = true;
-                return Some(Cmd::ScanIso {
-                    query: model.iso_query.clone(),
-                });
+                model.iso_debounce_until =
+                    Some(std::time::Instant::now() + std::time::Duration::from_millis(200));
             }
             _ => {}
         },
