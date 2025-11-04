@@ -40,7 +40,7 @@
 
 ## Why
 
-I like tiny, sharp tools. Fewer crates. TEA-style state machine, strong types, no side-effects in the view. Feels like OCaml/Elm, written in Rust.
+TEA-style state machine, strong types, no side-effects in the view. Feels like OCaml/Elm, written in Rust. Still figuring things out. Use at your own risk.
 
 ## Quick Start
 

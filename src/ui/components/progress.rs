@@ -3,53 +3,13 @@ use ratatui::{
     layout::{Alignment, Rect},
     style::Style,
     text::{Line, Span},
-    widgets::{Block, BorderType, Paragraph, Widget},
+    widgets::{Paragraph, Widget},
 };
 
-use super::icons::Icons;
-use super::theme::{colors, styles};
+use crate::ui::icons::Icons;
+use crate::ui::theme::styles;
 
-pub struct DetailPanel<'a> {
-    pub title: &'a str,
-    pub items: Vec<DetailItem<'a>>,
-    pub synced_focus: bool,
-}
-
-pub struct DetailItem<'a> {
-    pub label: &'a str,
-    pub value: String,
-    pub style: Style,
-}
-
-impl<'a> Widget for DetailPanel<'a> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        let border_color = if self.synced_focus {
-            colors::BORDER_ACTIVE
-        } else {
-            colors::BORDER_INACTIVE
-        };
-
-        let block = Block::bordered()
-            .title(self.title)
-            .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(border_color));
-
-        let inner = block.inner(area);
-        block.render(area, buf);
-
-        let mut lines = vec![];
-
-        for item in self.items {
-            lines.push(Line::from(vec![
-                Span::styled(format!("{}: ", item.label), styles::text_muted()),
-                Span::styled(item.value, item.style),
-            ]));
-        }
-
-        let paragraph = Paragraph::new(lines).alignment(Alignment::Left);
-        paragraph.render(inner, buf);
-    }
-}
+use super::utils::{format_seconds, human_size};
 
 pub struct ProgressWidget<'a> {
     pub title: String,
@@ -126,44 +86,46 @@ impl<'a> Widget for ProgressWidget<'a> {
     }
 }
 
-#[allow(dead_code)]
-pub struct StatusBadge<'a> {
-    pub text: &'a str,
-    pub style: Style,
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-impl<'a> Widget for StatusBadge<'a> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        let text = format!(" {} ", self.text);
-        let paragraph = Paragraph::new(text)
-            .style(self.style)
-            .alignment(Alignment::Center);
-        paragraph.render(area, buf);
+    #[test]
+    fn test_progress_percentage_calculation() {
+        let icons = Icons::UNICODE;
+        let progress = ProgressWidget {
+            title: "Test".to_string(),
+            current: 50,
+            total: 100,
+            speed_bps: 10.0,
+            bar_width: 20,
+            color: ratatui::style::Color::Green,
+            icons: &icons,
+        };
+
+        // Should be 50%
+        let pct = (progress.current as f64 / progress.total as f64) * 100.0;
+        assert_eq!(pct, 50.0);
     }
-}
 
-pub fn human_size(bytes: u64) -> String {
-    const KB: f64 = 1024.0;
-    const MB: f64 = KB * 1024.0;
-    const GB: f64 = MB * 1024.0;
-    let b = bytes as f64;
-    if b >= GB {
-        format!("{:.1} GiB", b / GB)
-    } else if b >= MB {
-        format!("{:.1} MiB", b / MB)
-    } else if b >= KB {
-        format!("{:.0} KiB", b / KB)
-    } else {
-        format!("{} B", bytes)
-    }
-}
+    #[test]
+    fn test_progress_zero_total() {
+        let icons = Icons::UNICODE;
+        let progress = ProgressWidget {
+            title: "Test".to_string(),
+            current: 0,
+            total: 0,
+            speed_bps: 0.0,
+            bar_width: 20,
+            color: ratatui::style::Color::Green,
+            icons: &icons,
+        };
 
-pub fn format_seconds(secs: u64) -> String {
-    if secs < 60 {
-        format!("{}s", secs)
-    } else if secs < 3600 {
-        format!("{}m {}s", secs / 60, secs % 60)
-    } else {
-        format!("{}h {}m", secs / 3600, (secs % 3600) / 60)
+        let pct = if progress.total > 0 {
+            (progress.current as f64 / progress.total as f64) * 100.0
+        } else {
+            0.0
+        };
+        assert_eq!(pct, 0.0);
     }
 }

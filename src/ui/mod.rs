@@ -1,10 +1,13 @@
-mod components;
+pub mod components;
+mod core;
 pub(crate) mod icons;
 pub(crate) mod layout;
 mod screens;
 pub(crate) mod theme;
 pub(crate) mod tokens;
 mod widgets;
+
+pub use core::{UiCtx, UiRouter, View};
 
 use ratatui::{
     buffer::Buffer,
@@ -14,44 +17,13 @@ use ratatui::{
 };
 
 use crate::app::state::{ActivePanel, Model, Screen};
-use icons::Icons;
 use theme::styles;
-use tokens::UiCapabilities;
-use widgets::{AppShell, app_shell::compute_border_color};
 
 impl Widget for &Model {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let capabilities = UiCapabilities::detect();
-        let icons = Icons::from_capabilities(&capabilities);
-
-        let shell = AppShell {
-            title: " ferric ",
-            border_color: compute_border_color(self),
-            capabilities: &capabilities,
-        };
-
-        shell.render(self, &icons, area, buf);
+        // Route using View + Props projection
+        UiRouter::default().render(self, area, buf);
     }
-}
-
-pub(crate) fn render_iso_search(model: &Model, area: Rect, buf: &mut Buffer, icons: &Icons) {
-    screens::iso_search::render(model, area, buf, icons);
-}
-
-pub(crate) fn render_device_select(model: &Model, area: Rect, buf: &mut Buffer, icons: &Icons) {
-    screens::device_select::render(model, area, buf, icons);
-}
-
-pub(crate) fn render_confirm(model: &Model, area: Rect, buf: &mut Buffer, icons: &Icons) {
-    screens::confirm::render(model, area, buf, icons);
-}
-
-pub(crate) fn render_writing(model: &Model, area: Rect, buf: &mut Buffer, icons: &Icons) {
-    screens::writing::render(model, area, buf, icons);
-}
-
-pub(crate) fn render_done(model: &Model, area: Rect, buf: &mut Buffer, icons: &Icons) {
-    screens::done::render(model, area, buf, icons);
 }
 
 pub(crate) fn render_footer(model: &Model, area: Rect, buf: &mut Buffer) {

@@ -6,21 +6,19 @@ use ratatui::{
 };
 
 use crate::app::state::{Model, Screen};
-use crate::ui::icons::Icons;
+use crate::ui::core::UiRouter;
 use crate::ui::layout::split_header_body_footer;
 use crate::ui::theme::colors;
-use crate::ui::tokens::UiCapabilities;
 
 use super::step_header::{StepHeader, build_status_line, screen_to_step_index};
 
 pub struct AppShell<'a> {
     pub title: &'a str,
     pub border_color: Color,
-    pub capabilities: &'a UiCapabilities,
 }
 
 impl<'a> AppShell<'a> {
-    pub fn render(self, model: &Model, icons: &Icons, area: Rect, buf: &mut Buffer) {
+    pub fn render(self, model: &Model, router: &UiRouter, area: Rect, buf: &mut Buffer) {
         let block = Block::bordered()
             .title(self.title)
             .title_alignment(Alignment::Center)
@@ -49,13 +47,8 @@ impl<'a> AppShell<'a> {
         };
         header.render(header_area, buf);
 
-        match model.screen {
-            Screen::IsoSearch => render_iso_search(model, body_area, buf, icons),
-            Screen::DeviceSelect => render_device_select(model, body_area, buf, icons),
-            Screen::Confirm => render_confirm(model, body_area, buf, icons),
-            Screen::Writing => render_writing(model, body_area, buf, icons),
-            Screen::Done => render_done(model, body_area, buf, icons),
-        }
+        // Use Router to render the screen content
+        router.render_screen(model, body_area, buf);
 
         render_footer(model, footer_area, buf);
     }
@@ -76,26 +69,6 @@ pub fn compute_border_color(model: &Model) -> Color {
             }
         }
     }
-}
-
-fn render_iso_search(model: &Model, area: Rect, buf: &mut Buffer, icons: &Icons) {
-    super::super::render_iso_search(model, area, buf, icons)
-}
-
-fn render_device_select(model: &Model, area: Rect, buf: &mut Buffer, icons: &Icons) {
-    super::super::render_device_select(model, area, buf, icons)
-}
-
-fn render_confirm(model: &Model, area: Rect, buf: &mut Buffer, icons: &Icons) {
-    super::super::render_confirm(model, area, buf, icons)
-}
-
-fn render_writing(model: &Model, area: Rect, buf: &mut Buffer, icons: &Icons) {
-    super::super::render_writing(model, area, buf, icons)
-}
-
-fn render_done(model: &Model, area: Rect, buf: &mut Buffer, icons: &Icons) {
-    super::super::render_done(model, area, buf, icons)
 }
 
 fn render_footer(model: &Model, area: Rect, buf: &mut Buffer) {
